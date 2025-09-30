@@ -1,23 +1,18 @@
-name: Deploy (Build + FTP)
+name: Deploy via FTP
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   workflow_dispatch:
-
-concurrency:
-  group: ftp-deploy-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   deploy:
-    name: Build & Enviar via FTP
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout código
+      - name: Checkout do código
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -25,14 +20,12 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install dependencies & build (Vite)
+      - name: Instalar dependências e buildar com Vite
         run: |
-          npm ci --no-audit --no-fund
+          npm ci
           npm run build
-        env:
-          CI: true
 
-      - name: Deploy FTP
+      - name: Enviar arquivos via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
@@ -40,31 +33,6 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           protocol: ftp
           port: 21
-          local-dir: ./
-          server-dir: ${{ secrets.FTP_PATH || 'laravel/' }}
-          timeout: 60000
-          exclude: |
-            **/.git*
-            **/.github/**
-            node_modules/**
-            tests/**
-            storage/framework/cache/**
-            storage/framework/sessions/**
-            storage/framework/views/**
-            vendor/**
-            public/hot
-            **/npm-debug.log
-            **/yarn-error.log
-            *.log
-            *.tar.gz
+          local-dir: ./dist
+          server-dir: /
           log-level: standard
-          security: loose
-          dry-run: false
-
-      - name: Finalização
-        run: echo "✅ Deploy FTP concluído (arquivos enviados)."
-
-      - name: Aviso vendor (se excluído)
-        if: always()
-        run: |
-          echo "Se precisar atualizar dependências PHP, rode 'composer install --no-dev -o' manualmente no servidor."
