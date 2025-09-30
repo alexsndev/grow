@@ -4,7 +4,8 @@
         ['slug' => 'goldbank', 'name' => 'Goldbank'],
         ['slug' => 'ibams', 'name' => 'Ibams'],
     ];
-    $isAdmin = Auth::check() && Auth::user()->email === 'admin@admin.com';
+    $isAuthenticated = Auth::check();
+    $isAdmin = $isAuthenticated && Auth::user()->email === 'admin@admin.com';
     $navBase = 'backdrop-blur border-b border-indigo-500/40 shadow-sm sticky top-0 z-40';
     $navTheme = $isAdmin
         ? 'bg-white/80 dark:bg-gray-900/70'
@@ -29,7 +30,9 @@
                     <x-nav-link :href="url('/')" :active="request()->is('/')">
                         Início
                     </x-nav-link>
-                    @if($isAdmin)
+                    @if(!$isAuthenticated)
+                        <x-nav-link :href="route('login')" :active="request()->routeIs('login')">Entrar</x-nav-link>
+                    @elseif($isAdmin)
                         <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">Dashboard</x-nav-link>
                         <x-nav-link :href="route('credentials.hub')" :active="request()->routeIs('credentials.hub')">Credenciais</x-nav-link>
                         <div class="relative" x-data="{open:false}" @mouseleave="open=false">
@@ -61,28 +64,37 @@
 
             <!-- Right: User Menu -->
             <div class="hidden sm:flex items-center gap-4">
-                <div class="flex items-center gap-3 text-xs">
-                    @if(!$isAdmin)
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300">Cliente</span>
-                    @else
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300">Admin</span>
-                    @endif
-                </div>
-                <x-dropdown align="right" width="48">
-                    <x-slot name="trigger">
-                        <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-600 dark:text-gray-300 bg-white/50 dark:bg-gray-800/60 hover:text-indigo-600 dark:hover:text-indigo-400 focus:outline-none transition">
-                            <div class="max-w-[140px] truncate">{{ Auth::user()->name }}</div>
-                            <svg class="ml-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd" /></svg>
-                        </button>
-                    </x-slot>
-                    <x-slot name="content">
-                        <x-dropdown-link :href="route('profile.edit')">Perfil</x-dropdown-link>
-                        <form method="POST" action="{{ route('logout') }}">
-                            @csrf
-                            <x-dropdown-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();">Sair</x-dropdown-link>
-                        </form>
-                    </x-slot>
-                </x-dropdown>
+                @if($isAuthenticated)
+                    <div class="flex items-center gap-3 text-xs">
+                        @if(!$isAdmin)
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300">Cliente</span>
+                        @else
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300">Admin</span>
+                        @endif
+                    </div>
+                    <x-dropdown align="right" width="48">
+                        <x-slot name="trigger">
+                            <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-600 dark:text-gray-300 bg-white/50 dark:bg-gray-800/60 hover:text-indigo-600 dark:hover:text-indigo-400 focus:outline-none transition">
+                                <div class="max-w-[140px] truncate">{{ Auth::user()->name }}</div>
+                                <svg class="ml-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd" /></svg>
+                            </button>
+                        </x-slot>
+                        <x-slot name="content">
+                            <x-dropdown-link :href="route('profile.edit')">Perfil</x-dropdown-link>
+                            <form method="POST" action="{{ route('logout') }}">
+                                @csrf
+                                <x-dropdown-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();">Sair</x-dropdown-link>
+                            </form>
+                        </x-slot>
+                    </x-dropdown>
+                @else
+                    <div class="flex items-center gap-3">
+                        <a href="{{ route('login') }}" class="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400">Entrar</a>
+                        @if (Route::has('register'))
+                            <a href="{{ route('register') }}" class="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400">Registrar</a>
+                        @endif
+                    </div>
+                @endif
             </div>
 
             <!-- Mobile Hamburger -->
@@ -101,7 +113,12 @@
     <div :class="{'block': open, 'hidden': !open}" class="sm:hidden hidden border-t border-gray-200 dark:border-gray-700 bg-white/90 dark:bg-gray-900/90 backdrop-blur">
         <div class="px-4 pt-4 pb-3 space-y-2">
             <x-responsive-nav-link :href="url('/')" :active="request()->is('/')">Início</x-responsive-nav-link>
-            @if($isAdmin)
+            @if(!$isAuthenticated)
+                <x-responsive-nav-link :href="route('login')" :active="request()->routeIs('login')">Entrar</x-responsive-nav-link>
+                @if (Route::has('register'))
+                    <x-responsive-nav-link :href="route('register')" :active="request()->routeIs('register')">Registrar</x-responsive-nav-link>
+                @endif
+            @elseif($isAdmin)
                 <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">Dashboard</x-responsive-nav-link>
                 <div class="pt-2 border-t border-gray-200 dark:border-gray-700">
                     <p class="px-2 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Empresas</p>
@@ -115,19 +132,21 @@
                 @endforeach
             @endif
         </div>
-        <div class="border-t border-gray-200 dark:border-gray-700 px-4 py-4">
-            <div class="flex flex-col gap-1 mb-3">
-                <span class="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{{ Auth::user()->name }}</span>
-                <span class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ Auth::user()->email }}</span>
-                <span class="inline-flex w-max items-center px-2 py-0.5 mt-1 rounded-full text-[10px] font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300">{{ $isAdmin ? 'Admin' : 'Cliente' }}</span>
+        @if($isAuthenticated)
+            <div class="border-t border-gray-200 dark:border-gray-700 px-4 py-4">
+                <div class="flex flex-col gap-1 mb-3">
+                    <span class="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{{ Auth::user()->name }}</span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ Auth::user()->email }}</span>
+                    <span class="inline-flex w-max items-center px-2 py-0.5 mt-1 rounded-full text-[10px] font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300">{{ $isAdmin ? 'Admin' : 'Cliente' }}</span>
+                </div>
+                <div class="space-y-1">
+                    <x-responsive-nav-link :href="route('profile.edit')">Perfil</x-responsive-nav-link>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <x-responsive-nav-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();">Sair</x-responsive-nav-link>
+                    </form>
+                </div>
             </div>
-            <div class="space-y-1">
-                <x-responsive-nav-link :href="route('profile.edit')">Perfil</x-responsive-nav-link>
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-                    <x-responsive-nav-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();">Sair</x-responsive-nav-link>
-                </form>
-            </div>
-        </div>
+        @endif
     </div>
 </nav>
