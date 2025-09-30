@@ -1,4 +1,4 @@
-name: Deploy Laravel with lftp
+name: Deploy Laravel sync (lftp)
 
 on:
   push:
@@ -12,25 +12,32 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build (opcional)
-        working-directory: ./laravel
-        run: |
-          composer install --no-dev --optimize-autoloader
-          npm ci
-          npm run build
-
       - name: Install lftp
         run: sudo apt-get update && sudo apt-get install -y lftp
 
-      - name: Upload with lftp
+      - name: Upload with lftp (no build)
         env:
-          FTP_HOST: ${{ secrets.FTP_HOST }}
-          FTP_USER: ${{ secrets.FTP_USERNAME }}
-          FTP_PASS: ${{ secrets.FTP_PASSWORD }}
+          HOST: ${{ secrets.FTP_HOST }}
+          USERNAME: ${{ secrets.FTP_USERNAME }}
+          PASSWORD: ${{ secrets.FTP_PASSWORD }}
           TARGET_DIR: ${{ secrets.FTP_TARGET }}
+          USE_SFTP: ${{ secrets.DEPLOY_USE_SFTP || 'false' }}
         run: |
-          # Se quiser SFTP, troque "ftp" por "sftp" em `set sftp:connect-program` ou use URL sftp://
-          lftp -u "$FTP_USER","$FTP_PASS" "$FTP_HOST" -e "
-            mirror -R --delete --verbose ./laravel $TARGET_DIR
+          set -e
+          echo "== Iniciando sync =="
+          PROTO=ftp
+          if [ "$USE_SFTP" = "true" ]; then
+            PROTO=sftp
+          fi
+          echo "Protocolo: $PROTO"
+          # Opções comuns
+          BASE_OPTS="set net:max-retries 2; set net:persist-retries 1; set net:timeout 25; set ftp:passive-mode true; set ssl:verify-certificate no;"
+          # Excludes (ajuste conforme quiser manter no servidor):
+          EXCLUDES="--exclude .git --exclude .github --exclude node_modules --exclude vendor --exclude storage/framework/cache --exclude storage/framework/sessions --exclude storage/framework/views"
+          # Diretorio origem = raiz do repo (./)
+          lftp -u "$USERNAME","$PASSWORD" $PROTO://"$HOST" -e "
+            $BASE_OPTS
+            mirror -R --delete --parallel=3 --verbose $EXCLUDES ./ $TARGET_DIR
             bye
           "
+          echo "== Finalizado =="
