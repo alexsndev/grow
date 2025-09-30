@@ -1,4 +1,4 @@
-name: Deploy via FTP
+name: 🚀 Deploy website on push
 
 on:
   push:
@@ -7,25 +7,15 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy:
+  web-deploy:
+    name: 🚚 Deploy
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout do código
+      - name: 🧾 Get latest code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Instalar dependências e buildar com Vite
-        run: |
-          npm ci
-          npm run build
-
-      - name: Enviar arquivos via FTP
+      - name: 📂 Sync files via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
@@ -34,5 +24,5 @@ jobs:
           protocol: ftp
           port: 21
           local-dir: ./dist
-          server-dir: /
+          server-dir: /home/u834385447/domains/sienna-wolf-712626.hostingersite.com/laravel
           log-level: standard
