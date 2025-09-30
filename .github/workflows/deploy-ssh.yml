@@ -1,4 +1,4 @@
-name: Deploy via FTP
+name: Deploy Laravel via FTP
 
 on:
   push:
@@ -9,45 +9,15 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout do código
+      - name: Checkout código
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Instalar FTP Action
+        uses: SamKirkland/FTP-Deploy-Action@v4
         with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Instalar dependências e buildar com Vite
-        run: |
-          npm ci
-          npm run build
-
-      - name: Enviar arquivos via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
+          server: ftp.sienna-wolf-712626.hostingersite.com
+          username: u834385447.grow
           password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftp
-          port: 21
-          # Enviar todo o projeto (precisa da barra final). Se quiser só build front, use public/build/.
-          local-dir: ./
-          server-dir: /
-          log-level: standard
-          exclude: |
-            **/.git*/
-            .github/**
-            node_modules/**
-            tests/**
-            storage/framework/cache/**
-            storage/framework/sessions/**
-            storage/framework/views/**
-            vendor/**
-            public/hot
-            **/npm-debug.log
-            **/yarn-error.log
-            *.log
-            *.tar.gz
+          local-dir: ./laravel
+          server-dir: /home/u834385447/domains/sienna-wolf-712626.hostingersite.com/laravel
