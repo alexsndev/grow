@@ -33,6 +33,21 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           protocol: ftp
           port: 21
-          local-dir: ./dist
+          # Enviar todo o projeto (precisa da barra final). Se quiser só build front, use public/build/.
+          local-dir: ./
           server-dir: /
           log-level: standard
+          exclude: |
+            **/.git*/
+            .github/**
+            node_modules/**
+            tests/**
+            storage/framework/cache/**
+            storage/framework/sessions/**
+            storage/framework/views/**
+            vendor/**
+            public/hot
+            **/npm-debug.log
+            **/yarn-error.log
+            *.log
+            *.tar.gz
