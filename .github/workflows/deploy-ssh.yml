@@ -38,8 +38,8 @@ jobs:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          # Se o provedor suportar FTPS explícito (Hostinger normalmente sim); mudar para 'ftp' se houver erro.
-          protocol: ftps
+          # Tentar primeiro FTP simples; se funcionar com segurança mude para 'ftps'.
+          protocol: ftp
           port: 21
           server-dir: ${{ secrets.FTP_PATH }}/
           local-dir: ./
@@ -56,8 +56,14 @@ jobs:
             vendor/**
           log-level: standard
           security: loose
-          passive: true
           dry-run: false
+
+      - name: (Opcional) Teste conexão FTP (debug)
+        if: failure() && github.event_name == 'workflow_dispatch'
+        run: |
+          echo "== Tentando listar diretório raiz via curl (modo diagnóstico) =="
+          which curl || true
+          curl -v --disable-eprt --ftp-method nocwd "ftp://${{ secrets.FTP_USERNAME }}:${{ secrets.FTP_PASSWORD }}@${{ secrets.FTP_SERVER }}:${{ secrets.FTP_PORT || 21 }}" || true
 
       - name: Finalização
         run: echo "✅ Deploy FTP concluído (arquivos enviados)."
