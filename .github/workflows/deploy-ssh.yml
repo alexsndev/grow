@@ -1,4 +1,4 @@
-name: Deploy (Build + SFTP)
+name: Deploy (Build + FTP)
 
 on:
   push:
@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   deploy:
-  name: Build & Enviar via SFTP
+  name: Build & Enviar via FTP
     runs-on: ubuntu-latest
     steps:
       - name: Checkout código
@@ -32,36 +32,37 @@ jobs:
         env:
           CI: true
 
-      - name: Deploy SFTP
-        uses: wlixcc/SFTP-Deploy-Action@v1.2.4
+      - name: Deploy FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.SFTP_SERVER }}
-          username: ${{ secrets.SFTP_USERNAME }}
-          port: ${{ secrets.SFTP_PORT || 22 }}
-          # Use ONE of password or ssh_private_key
-          password: ${{ secrets.SFTP_PASSWORD }}
-          # ssh_private_key: ${{ secrets.SFTP_SSH_KEY }}
-          local_path: './'
-          remote_path: ${{ secrets.SFTP_PATH }}/
-          sftp_only: true
-          args: '-o StrictHostKeyChecking=no'
+          server: ${{ secrets.FTP_SERVER }} # Ex: 147.93.39.173 (sem ftp://)
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftp
+          port: 21
+          local-dir: ./
+          # Sem server-dir: envia para o diretório raiz configurado para o usuário FTP (ex: public_html ou laravel dependendo da conta).
+          timeout: 60000
           exclude: |
-            .git*
-            .github/**
+            **/.git*
+            **/.github/**
             node_modules/**
             tests/**
             storage/framework/cache/**
             storage/framework/sessions/**
             storage/framework/views/**
             vendor/**
-            *.log
-            *.tar.gz
             public/hot
             **/npm-debug.log
             **/yarn-error.log
+            *.log
+            *.tar.gz
+          log-level: standard
+          security: loose
+          dry-run: false
 
       - name: Finalização
-        run: echo "✅ Deploy SFTP concluído (arquivos enviados)."
+        run: echo "✅ Deploy FTP concluído (arquivos enviados)."
 
       - name: Aviso vendor (se excluído)
         if: always()
