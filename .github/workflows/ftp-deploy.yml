@@ -1,0 +1,52 @@
+name: FTP Deploy Minimal
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build front (Vite)
+        run: |
+          if [ -f package.json ]; then
+            npm ci --no-audit --no-fund
+            npm run build || echo "Build falhou ou não existe script build, prosseguindo mesmo assim"
+          fi
+
+      - name: FTP Upload
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }} # ex: ftp.sienna-wolf-712626.hostingersite.com (sem protocolo)
+          username: ${{ secrets.FTP_USERNAME }} # ex: u834385447.grow
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftp
+          port: 21
+          local-dir: ./
+          server-dir: /home/u834385447/domains/sienna-wolf-712626.hostingersite.com/laravel/
+          timeout: 60000
+          exclude: |
+            **/.git*/
+            .github/**
+            node_modules/**
+            tests/**
+            storage/framework/cache/**
+            storage/framework/sessions/**
+            storage/framework/views/**
+            vendor/**
+            public/hot
+            **/npm-debug.log
+            **/yarn-error.log
+            *.log
+            *.tar.gz
+          log-level: standard
+          security: loose
+          dry-run: false
+
+      - name: Done
+        run: echo "✅ Deploy finalizado"
