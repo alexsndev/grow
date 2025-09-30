@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   deploy:
-  name: Build & Enviar via FTP
+    name: Build & Enviar via FTP
     runs-on: ubuntu-latest
     steps:
       - name: Checkout código
@@ -35,13 +35,13 @@ jobs:
       - name: Deploy FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.FTP_SERVER }} # Ex: 147.93.39.173 (sem ftp://)
+          server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           protocol: ftp
           port: 21
           local-dir: ./
-          # Sem server-dir: envia para o diretório raiz configurado para o usuário FTP (ex: public_html ou laravel dependendo da conta).
+          server-dir: ${{ secrets.FTP_PATH || 'laravel/' }}
           timeout: 60000
           exclude: |
             **/.git*
@@ -67,4 +67,4 @@ jobs:
       - name: Aviso vendor (se excluído)
         if: always()
         run: |
-          echo "Se precisar atualizar dependências PHP, rode 'composer install --no-dev -o' manualmente no servidor." 
+          echo "Se precisar atualizar dependências PHP, rode 'composer install --no-dev -o' manualmente no servidor."
