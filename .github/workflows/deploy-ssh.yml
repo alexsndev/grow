@@ -1,4 +1,4 @@
-name: FTP Deploy
+name: Deploy (Build + SFTP)
 
 on:
   push:
@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   deploy:
-    name: Enviar arquivos via FTP (simples)
+  name: Build & Enviar via SFTP
     runs-on: ubuntu-latest
     steps:
       - name: Checkout código
@@ -32,41 +32,36 @@ jobs:
         env:
           CI: true
 
-      - name: FTP Deploy
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      - name: Deploy SFTP
+        uses: wlixcc/SFTP-Deploy-Action@v1.2.4
         with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          # Tentar primeiro FTP simples; se funcionar com segurança mude para 'ftps'.
-          protocol: ftp
-          port: 21
-          server-dir: ${{ secrets.FTP_PATH }}/
-          local-dir: ./
-          timeout: 60000
+          server: ${{ secrets.SFTP_SERVER }}
+          username: ${{ secrets.SFTP_USERNAME }}
+          port: ${{ secrets.SFTP_PORT || 22 }}
+          # Use ONE of password or ssh_private_key
+          password: ${{ secrets.SFTP_PASSWORD }}
+          # ssh_private_key: ${{ secrets.SFTP_SSH_KEY }}
+          local_path: './'
+          remote_path: ${{ secrets.SFTP_PATH }}/
+          sftp_only: true
+          args: '-o StrictHostKeyChecking=no'
           exclude: |
-            **/.git*
-            **/.github/**
+            .git*
+            .github/**
             node_modules/**
             tests/**
             storage/framework/cache/**
             storage/framework/sessions/**
             storage/framework/views/**
-            # Remova a linha abaixo se quiser enviar vendor
             vendor/**
-          log-level: standard
-          security: loose
-          dry-run: false
-
-      - name: (Opcional) Teste conexão FTP (debug)
-        if: failure() && github.event_name == 'workflow_dispatch'
-        run: |
-          echo "== Tentando listar diretório raiz via curl (modo diagnóstico) =="
-          which curl || true
-          curl -v --disable-eprt --ftp-method nocwd "ftp://${{ secrets.FTP_USERNAME }}:${{ secrets.FTP_PASSWORD }}@${{ secrets.FTP_SERVER }}:${{ secrets.FTP_PORT || 21 }}" || true
+            *.log
+            *.tar.gz
+            public/hot
+            **/npm-debug.log
+            **/yarn-error.log
 
       - name: Finalização
-        run: echo "✅ Deploy FTP concluído (arquivos enviados)."
+        run: echo "✅ Deploy SFTP concluído (arquivos enviados)."
 
       - name: Aviso vendor (se excluído)
         if: always()
