@@ -1,4 +1,4 @@
-name: FTP Deploy Minimal
+name: Deploy Laravel with lftp
 
 on:
   push:
@@ -6,47 +6,31 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build front (Vite)
+      - name: Build (opcional)
+        working-directory: ./laravel
         run: |
-          if [ -f package.json ]; then
-            npm ci --no-audit --no-fund
-            npm run build || echo "Build falhou ou não existe script build, prosseguindo mesmo assim"
-          fi
+          composer install --no-dev --optimize-autoloader
+          npm ci
+          npm run build
 
-      - name: FTP Upload
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.FTP_SERVER }} # ex: ftp.sienna-wolf-712626.hostingersite.com (sem protocolo)
-          username: ${{ secrets.FTP_USERNAME }} # ex: u834385447.grow
-          password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftp
-          port: 21
-          local-dir: ./
-          server-dir: /home/u834385447/domains/sienna-wolf-712626.hostingersite.com/laravel/
-          timeout: 60000
-          exclude: |
-            **/.git*/
-            .github/**
-            node_modules/**
-            tests/**
-            storage/framework/cache/**
-            storage/framework/sessions/**
-            storage/framework/views/**
-            vendor/**
-            public/hot
-            **/npm-debug.log
-            **/yarn-error.log
-            *.log
-            *.tar.gz
-          log-level: standard
-          security: loose
-          dry-run: false
+      - name: Install lftp
+        run: sudo apt-get update && sudo apt-get install -y lftp
 
-      - name: Done
-        run: echo "✅ Deploy finalizado"
+      - name: Upload with lftp
+        env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USER: ${{ secrets.FTP_USERNAME }}
+          FTP_PASS: ${{ secrets.FTP_PASSWORD }}
+          TARGET_DIR: ${{ secrets.FTP_TARGET }}
+        run: |
+          # Se quiser SFTP, troque "ftp" por "sftp" em `set sftp:connect-program` ou use URL sftp://
+          lftp -u "$FTP_USER","$FTP_PASS" "$FTP_HOST" -e "
+            mirror -R --delete --verbose ./laravel $TARGET_DIR
+            bye
+          "
